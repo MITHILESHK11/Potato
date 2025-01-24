@@ -20,7 +20,6 @@ st.title("Potato Leaf Disease Prediction")
 st.write("An AI model to classify potato leaf diseases: Early Blight, Late Blight, and Healthy.")
 
 # Load dataset
-@st.cache_data  # Cache dataset loading for performance
 def load_dataset():
     return tf.keras.preprocessing.image_dataset_from_directory(
         DATASET_PATH,
