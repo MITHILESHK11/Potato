@@ -22,7 +22,7 @@ def load_trained_model():
 model = load_trained_model()
 
 # Define class names (adjust based on your dataset)
-class_names = ["Healthy", "Early Blight", "Late Blight"]  # Update with your actual class names
+class_names = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]  # Update with your actual class names
 
 # Function to preprocess the uploaded image
 def preprocess_image(image):
