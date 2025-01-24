@@ -13,7 +13,7 @@ EPOCHS = 10
 CHANNELS = 3
 
 # Dataset Path (pointing to your GitHub folder structure)
-DATASET_PATH = "potato"  # Adjust this if the folder name is different
+DATASET_PATH = "Potato"  # Adjust this if the folder name is different
 
 # Streamlit Title
 st.title("Potato Leaf Disease Prediction")
