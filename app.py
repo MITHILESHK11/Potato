@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 def load_model():
-    model = tf.keras.models.load_model('models/1.keras')  # Path to your saved model
+    model = tf.keras.models.load_model('1.keras')  # Path to your saved model
     return model
 
 model = load_model()
