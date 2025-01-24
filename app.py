@@ -56,7 +56,7 @@ data_augmentation = tf.keras.Sequential([
 input_shape = (image_size, image_size, channels)
 n_classes = len(class_names)
 model = models.Sequential([
-    layers.InputLayer(input_shape=input_shape),  # Changed to shape for compatibility
+    layers.InputLayer(input_shape=input_shape),
     resize_and_rescale,
     data_augmentation,
     layers.Conv2D(32, (3, 3), activation='relu'),
@@ -70,7 +70,8 @@ model = models.Sequential([
     layers.Conv2D(64, (3, 3), activation='relu'),
     layers.MaxPooling2D((2, 2)),
     layers.Flatten(),
-    layers.Dense(64, activation='relu'),
+    layers.Dense(128, activation='relu'),  # Increased to 128 for better feature extraction
+    layers.Dropout(0.5),  # Added dropout to prevent overfitting
     layers.Dense(n_classes, activation='softmax'),
 ])
 model.summary()
@@ -82,25 +83,28 @@ model.compile(
     metrics=['accuracy']
 )
 
-model.save('1.keras')
-model = tf.keras.models.load_model('1.keras')
-
-history = model.fit(
-    train_ds,
-    epochs=epochs,
-    batch_size=batch_size,
-    verbose=1,
-    validation_data=val_ds
-)
+# Check if the model is already trained and saved
+model_path = '1.keras'
+if os.path.exists(model_path):
+    model = tf.keras.models.load_model(model_path)
+else:
+    history = model.fit(
+        train_ds,
+        epochs=epochs,
+        verbose=1,
+        validation_data=val_ds
+    )
+    model.save(model_path)
 
 # Prediction function
 def predict(model, img):
     img = img.resize((image_size, image_size))
     img_array = tf.keras.preprocessing.image.img_to_array(img)
-    img_array = tf.expand_dims(img_array, 0)  # Create batch
+    img_array = np.expand_dims(img_array, axis=0)  # Create batch
+    img_array = img_array / 255.0  # Normalize to match training preprocessing
     predictions = model.predict(img_array)
     predicted_class = class_names[np.argmax(predictions[0])]
-    confidence = round(100 * (np.max(predictions[0])), 2)
+    confidence = round(100 * np.max(predictions[0]), 2)
     return predicted_class, confidence
 
 # Streamlit App
@@ -112,11 +116,11 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file)
     st.image(image, caption='Uploaded Image', use_column_width=True)
     st.write("Classifying...")
-    
+
     # Prediction handling with try-except to prevent app crash
     try:
         predicted_class, confidence = predict(model, image)
         st.write(f"**Prediction:** {predicted_class}")
         st.write(f"**Confidence:** {confidence}%")
     except Exception as e:
-        st.write("Error during prediction:", e)
+        st.error(f"Error during prediction: {e}")
