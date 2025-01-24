@@ -3,8 +3,6 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 
-# Load the trained model
-@st.cache(allow_output_mutation=True)
 def load_model():
     model = tf.keras.models.load_model('models/1.keras')  # Path to your saved model
     return model
