@@ -20,6 +20,7 @@ st.title("Potato Leaf Disease Prediction")
 st.write("An AI model to classify potato leaf diseases: Early Blight, Late Blight, and Healthy.")
 
 # Load dataset
+@st.cache_data  # Cache dataset loading for performance
 def load_dataset():
     return tf.keras.preprocessing.image_dataset_from_directory(
         DATASET_PATH,
@@ -37,11 +38,11 @@ st.write(f"Class Names: {class_names}")
 
 # Split dataset into training, validation, and testing
 def split_dataset(dataset, train_split=0.8, val_split=0.1, test_split=0.1):
-    dataset_size = len(dataset)
+    dataset_size = sum(1 for _ in dataset)  # Calculate the number of batches
     train_size = int(train_split * dataset_size)
     val_size = int(val_split * dataset_size)
 
-    dataset = dataset.shuffle(dataset_size, seed=123)
+    dataset = dataset.shuffle(dataset_size * BATCH_SIZE, seed=123)
     train_ds = dataset.take(train_size)
     val_ds = dataset.skip(train_size).take(val_size)
     test_ds = dataset.skip(train_size).skip(val_size)
@@ -74,7 +75,7 @@ def build_model():
     n_classes = len(class_names)
 
     model = models.Sequential([
-        layers.InputLayer(input_shape=input_shape),
+        layers.Input(shape=input_shape),
         resize_and_rescale,
         data_augmentation,
         layers.Conv2D(32, (3, 3), activation='relu'),
