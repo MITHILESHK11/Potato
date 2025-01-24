@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 
 # Load the trained model
-MODEL_PATH = 'trainedmodel.h5'
+MODEL_PATH = 'model.weights.h5'
 model = load_model(MODEL_PATH)
 
 # Define class names
