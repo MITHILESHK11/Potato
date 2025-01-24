@@ -1,126 +1,46 @@
-import tensorflow as tf
-from tensorflow.keras import models, layers
-import matplotlib.pyplot as plt
-import numpy as np
 import streamlit as st
+import tensorflow as tf
+import numpy as np
 from PIL import Image
-import os
 
-# Disable GPU (if unnecessary) to prevent CUDA issues
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# Load the trained model
+@st.cache(allow_output_mutation=True)
+def load_model():
+    model = tf.keras.models.load_model('models/1.keras')  # Path to your saved model
+    return model
 
-# Dataset setup
-image_size = 256
-batch_size = 32
-channels = 3
-epochs = 20
+model = load_model()
 
-# Load dataset from directory
-datasets = tf.keras.preprocessing.image_dataset_from_directory(
-    "Potato",
-    shuffle=True,
-    image_size=(image_size, image_size),
-    batch_size=batch_size,
-)
+# Class names (same as your dataset)
+class_names = ['Class1', 'Class2', 'Class3']  # Replace with actual class names
 
-class_names = datasets.class_names
+# Function to make prediction
+def predict(image):
+    img_array = tf.keras.preprocessing.image.img_to_array(image)
+    img_array = tf.expand_dims(img_array, 0)  # Add batch dimension
 
-# Partition dataset into train, validation, and test sets
-def get_dataset_partitions_tf(ds, train_split=0.8, val_split=0.1, test_split=0.1, shuffle=True, shuffle_size=10000):
-    ds_size = len(ds)
-    if shuffle:
-        ds = ds.shuffle(shuffle_size, seed=23)
-    train_size = int(train_split * ds_size)
-    val_size = int(val_split * ds_size)
-    train_ds = ds.take(train_size)
-    val_ds = ds.skip(train_size).take(val_size)
-    test_ds = ds.skip(train_size).skip(val_size)
-    return train_ds, val_ds, test_ds
-
-train_ds, val_ds, test_ds = get_dataset_partitions_tf(datasets)
-train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=tf.data.AUTOTUNE)
-val_ds = val_ds.cache().shuffle(1000).prefetch(buffer_size=tf.data.AUTOTUNE)
-test_ds = test_ds.cache().shuffle(1000).prefetch(buffer_size=tf.data.AUTOTUNE)
-
-# Data preprocessing layers
-resize_and_rescale = tf.keras.Sequential([
-    layers.Resizing(image_size, image_size),
-    layers.Rescaling(1.0 / 255)
-])
-data_augmentation = tf.keras.Sequential([
-    layers.RandomFlip('horizontal_and_vertical'),
-    layers.RandomRotation(0.2)
-])
-
-# Model definition
-input_shape = (image_size, image_size, channels)
-n_classes = len(class_names)
-model = models.Sequential([
-    layers.InputLayer(input_shape=input_shape),
-    resize_and_rescale,
-    data_augmentation,
-    layers.Conv2D(32, (3, 3), activation='relu'),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu'),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu'),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu'),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu'),
-    layers.MaxPooling2D((2, 2)),
-    layers.Flatten(),
-    layers.Dense(128, activation='relu'),  # Increased to 128 for better feature extraction
-    layers.Dropout(0.5),  # Added dropout to prevent overfitting
-    layers.Dense(n_classes, activation='softmax'),
-])
-model.summary()
-
-# Compile and train the model
-model.compile(
-    optimizer='adam',
-    loss='sparse_categorical_crossentropy',
-    metrics=['accuracy']
-)
-
-# Check if the model is already trained and saved
-model_path = '1.keras'
-if os.path.exists(model_path):
-    model = tf.keras.models.load_model(model_path)
-else:
-    history = model.fit(
-        train_ds,
-        epochs=epochs,
-        verbose=1,
-        validation_data=val_ds
-    )
-    model.save(model_path)
-
-# Prediction function
-def predict(model, img):
-    img = img.resize((image_size, image_size))
-    img_array = tf.keras.preprocessing.image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)  # Create batch
-    img_array = img_array / 255.0  # Normalize to match training preprocessing
     predictions = model.predict(img_array)
     predicted_class = class_names[np.argmax(predictions[0])]
     confidence = round(100 * np.max(predictions[0]), 2)
+    
     return predicted_class, confidence
 
-# Streamlit App
-st.title("Potato Disease Classifier")
-st.write("Upload an image of a potato leaf, and the model will classify its disease.")
+# Streamlit UI
+st.title("Potato Disease Classification")
 
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
+# File uploader
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+
 if uploaded_file is not None:
+    # Display uploaded image
     image = Image.open(uploaded_file)
     st.image(image, caption='Uploaded Image', use_column_width=True)
-    st.write("Classifying...")
 
-    # Prediction handling with try-except to prevent app crash
-    try:
-        predicted_class, confidence = predict(model, image)
-        st.write(f"**Prediction:** {predicted_class}")
-        st.write(f"**Confidence:** {confidence}%")
-    except Exception as e:
-        st.error(f"Error during prediction: {e}")
+    # Preprocess the image
+    image = image.resize((256, 256))  # Resize to match model's input size
+
+    # Prediction button
+    if st.button('Predict'):
+        predicted_class, confidence = predict(image)
+        st.write(f"Predicted Class: {predicted_class}")
+        st.write(f"Confidence: {confidence}%")
