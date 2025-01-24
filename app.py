@@ -4,20 +4,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 from PIL import Image
+import os
+
+# Disable GPU (if unnecessary) to prevent CUDA issues
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # Dataset setup
 image_size = 256
 batch_size = 32
-chanels = 3
+channels = 3
 epochs = 20
 
 # Load dataset from directory
 datasets = tf.keras.preprocessing.image_dataset_from_directory(
-   "Potato",
+    "Potato",
     shuffle=True,
     image_size=(image_size, image_size),
     batch_size=batch_size,
 )
+
 class_names = datasets.class_names
 
 # Partition dataset into train, validation, and test sets
@@ -48,10 +53,10 @@ data_augmentation = tf.keras.Sequential([
 ])
 
 # Model definition
-input_shape = (image_size, image_size, chanels)
+input_shape = (image_size, image_size, channels)
 n_classes = len(class_names)
 model = models.Sequential([
-    layers.InputLayer(input_shape=input_shape),
+    layers.InputLayer(input_shape=input_shape),  # Changed to shape for compatibility
     resize_and_rescale,
     data_augmentation,
     layers.Conv2D(32, (3, 3), activation='relu'),
@@ -76,6 +81,10 @@ model.compile(
     loss='sparse_categorical_crossentropy',
     metrics=['accuracy']
 )
+
+model.save('1.keras')
+model = tf.keras.models.load_model('1.keras')
+
 history = model.fit(
     train_ds,
     epochs=epochs,
@@ -83,6 +92,7 @@ history = model.fit(
     verbose=1,
     validation_data=val_ds
 )
+
 # Prediction function
 def predict(model, img):
     img = img.resize((image_size, image_size))
@@ -102,6 +112,11 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file)
     st.image(image, caption='Uploaded Image', use_column_width=True)
     st.write("Classifying...")
-    predicted_class, confidence = predict(model, image)
-    st.write(f"**Prediction:** {predicted_class}")
-    st.write(f"**Confidence:** {confidence}%")
+    
+    # Prediction handling with try-except to prevent app crash
+    try:
+        predicted_class, confidence = predict(model, image)
+        st.write(f"**Prediction:** {predicted_class}")
+        st.write(f"**Confidence:** {confidence}%")
+    except Exception as e:
+        st.write("Error during prediction:", e)
