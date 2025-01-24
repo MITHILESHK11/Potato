@@ -1,44 +1,43 @@
 import streamlit as st
 import tensorflow as tf
-import numpy as np
+from tensorflow.keras.models import load_model
 from PIL import Image
+import numpy as np
 
-def load_model():
-    model = tf.keras.models.load_model('1.keras')  # Path to your saved model
-    return model
+# Load the trained model
+MODEL_PATH = 'trainedmodel.h5'
+model = load_model(MODEL_PATH)
 
-model = load_model()
+# Define class names
+CLASS_NAMES = ["Class 1", "Class 2", "Class 3"]  # Replace with your actual class names
 
-# Class names (same as your dataset)
-class_names = ['Class1', 'Class2', 'Class3']  # Replace with actual class names
+# Preprocessing function
+def preprocess_image(image):
+    image = image.resize((256, 256))  # Resize to match model input
+    image_array = np.array(image) / 255.0  # Rescale to [0, 1]
+    image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension
+    return image_array
 
-# Function to make prediction
-def predict(image):
-    img_array = tf.keras.preprocessing.image.img_to_array(image)
-    img_array = tf.expand_dims(img_array, 0)  # Add batch dimension
-
-    predictions = model.predict(img_array)
-    predicted_class = class_names[np.argmax(predictions[0])]
-    confidence = round(100 * np.max(predictions[0]), 2)
-    
-    return predicted_class, confidence
-
-# Streamlit UI
+# Streamlit App
 st.title("Potato Disease Classification")
+st.write("Upload an image of a potato plant to classify its disease.")
 
 # File uploader
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Display uploaded image
+    # Load and display the image
     image = Image.open(uploaded_file)
-    st.image(image, caption='Uploaded Image', use_column_width=True)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
     # Preprocess the image
-    image = image.resize((256, 256))  # Resize to match model's input size
+    preprocessed_image = preprocess_image(image)
 
-    # Prediction button
-    if st.button('Predict'):
-        predicted_class, confidence = predict(image)
-        st.write(f"Predicted Class: {predicted_class}")
-        st.write(f"Confidence: {confidence}%")
+    # Make predictions
+    predictions = model.predict(preprocessed_image)
+    predicted_class = CLASS_NAMES[np.argmax(predictions[0])]
+    confidence = round(100 * np.max(predictions[0]), 2)
+
+    # Display the prediction
+    st.write(f"**Prediction:** {predicted_class}")
+    st.write(f"**Confidence:** {confidence}%")
