@@ -1,55 +1,28 @@
 import streamlit as st
 import tensorflow as tf
-from tensorflow.keras.models import load_model, Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, InputLayer
+from tensorflow.keras.models import load_model
 from PIL import Image
 import numpy as np
 
-# Path to the model or weights
-FULL_MODEL_PATH = "trainedmodel.h5"
-WEIGHTS_PATH = "model.weights.h5"
-
-# Function to create the model architecture if only weights are available
-def create_model():
-    model = Sequential([
-        InputLayer(input_shape=(256, 256, 3)),
-        Conv2D(32, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Flatten(),
-        Dense(64, activation='relu'),
-        Dense(3, activation='softmax')  # Adjust number of classes if needed
-    ])
-    return model
+# Path to the .keras directory
+MODEL_DIR = "trainedmodel.keras"
 
 # Load the model
+@st.cache_resource
 def load_trained_model():
     try:
-        # First, try to load the full model
-        model = load_model(FULL_MODEL_PATH)
-        st.success("Loaded full model successfully.")
+        model = load_model(MODEL_DIR)
+        st.success("Model loaded successfully!")
+        return model
     except Exception as e:
-        # If full model is not available, load weights
-        st.warning("Full model not found. Attempting to load weights...")
-        model = create_model()
-        model.load_weights(WEIGHTS_PATH)
-        st.success("Loaded weights successfully.")
-    return model
+        st.error(f"Failed to load the model: {e}")
+        return None
 
 # Load the model
 model = load_trained_model()
 
 # Define class names (adjust based on your dataset)
-class_names = ["Healthy", "Early Blight", "Late Blight"]
+class_names = ["Healthy", "Early Blight", "Late Blight"]  # Update with your actual class names
 
 # Function to preprocess the uploaded image
 def preprocess_image(image):
@@ -70,14 +43,18 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file)
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # Preprocess the image
-    preprocessed_image = preprocess_image(image)
+    if model is not None:
+        # Preprocess the image
+        preprocessed_image = preprocess_image(image)
 
-    # Make prediction
-    predictions = model.predict(preprocessed_image)
-    predicted_class = class_names[np.argmax(predictions[0])]
-    confidence = round(100 * np.max(predictions[0]), 2)
+        # Make prediction
+        predictions = model.predict(preprocessed_image)
+        predicted_class = class_names[np.argmax(predictions[0])]
+        confidence = round(100 * np.max(predictions[0]), 2)
 
-    # Display prediction results
-    st.write(f"### Prediction: {predicted_class}")
-    st.write(f"### Confidence: {confidence}%")
+        # Display prediction results
+        st.write(f"### Prediction: {predicted_class}")
+        st.write(f"### Confidence: {confidence}%")
+    else:
+        st.error("Model could not be loaded. Please check the model directory.")
+
