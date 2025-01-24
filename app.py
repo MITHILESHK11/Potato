@@ -83,13 +83,6 @@ history = model.fit(
     verbose=1,
     validation_data=val_ds
 )
-
-# Save the model
-model.save('potato_model.keras')
-
-# Load the trained model
-model = tf.keras.models.load_model('potato_model.keras')
-
 # Prediction function
 def predict(model, img):
     img = img.resize((image_size, image_size))
