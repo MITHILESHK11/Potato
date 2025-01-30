@@ -38,8 +38,8 @@ elif app_mode == 'Disease Recognition':
     # Set model paths based on user selection
     model_paths = {
         'Model 1: AdamW (10 Epochs, 98% Train, 97% Val)': "trained_plant_disease_model_2.keras",
-        'Model 2: Nadam (10 Epochs, 99% Train, 98% Val)': "path_to_model_2.keras",
-        'Model 3: Nadam (12 Epochs, 99.99% Train, 98.9% Val)': "path_to_model_3.keras"
+        'Model 2: Nadam (10 Epochs, 99% Train, 98% Val)': "trained_plant_disease_model_3.keras",
+        'Model 3: Nadam (12 Epochs, 99.99% Train, 98.9% Val)': "trained_plant_disease_model_4.keras"
     }
     selected_model_path = model_paths[model_choice]
 
